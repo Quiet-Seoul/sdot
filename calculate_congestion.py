@@ -1,7 +1,22 @@
 import pandas as pd
-import json
-import os
+import pymysql
+import pytz
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+import os
+
+# .env 파일 로드
+load_dotenv()
+
+# DB 연결
+def get_connection():
+    return pymysql.connect(
+        host=os.getenv('DB_HOST'),
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASSWORD'),
+        db=os.getenv('DB_NAME'),
+        charset='utf8'
+    )
 
 # 혼잡도 계산 함수
 def get_congestion_label(visitors, area_m2):
@@ -27,7 +42,8 @@ park_settings = {
     "서대문독립공원": {"area_m2": 44600, "stay_hours": 2, "scaling_factor": 20},
 }
 
-def process_park_forecast(park_name, input_path, output_path):
+# 혼잡도 계산 및 DB 저장
+def process_park_forecast(park_name, start_date, end_date):
     # 설정 가져오기
     settings = park_settings.get(park_name)
     if not settings:
@@ -38,69 +54,88 @@ def process_park_forecast(park_name, input_path, output_path):
     stay_hours = settings["stay_hours"]
     scaling_factor = settings["scaling_factor"]
 
-    # JSON 읽기
-    with open(input_path, 'r', encoding='utf-8') as f:
-        json_list = json.load(f)
+    conn = get_connection()
+    cursor = conn.cursor()
 
-    result = []
+    # park_forecast 데이터 불러오기
+    query = """
+        SELECT forecast_date, forecast_hour, yhat
+        FROM park_forecast
+        WHERE park_name = %s
+        AND forecast_date BETWEEN %s AND %s
+        ORDER BY forecast_date, forecast_hour
+    """
+    df = pd.read_sql(query, conn, params=[park_name, start_date, end_date])
 
-    for day_entry in json_list:
-        day_result = {'day': day_entry['day']}
-        stay_history = []
-        stay_population = 0
+    if df.empty:
+        print(f"[{park_name}] 예측 데이터 없음, 스킵")
+        cursor.close()
+        conn.close()
+        return
 
-        for hour in range(24):
-            incoming = day_entry.get(str(hour), 0)
+    # 현재 한국시간 가져오기
+    kst = pytz.timezone('Asia/Seoul')
+    now_kst = datetime.now(kst)
 
-            # 1. 스케일링
-            incoming *= scaling_factor
+    # 혼잡도 계산
+    stay_history = []
+    stay_population = 0
+    insert_data = []
 
-            # 2. 체류 시간만큼 인구 계산
-            stay_history.append(incoming)
-            stay_population += incoming
+    for idx, row in df.iterrows():
+        incoming = row['yhat'] * scaling_factor
 
-            if hour >= stay_hours:
-                stay_population -= stay_history[hour - stay_hours]
+        # 체류 인구 계산
+        stay_history.append(incoming)
+        stay_population += incoming
 
-            stay_population = max(stay_population, 0)
+        if len(stay_history) > stay_hours:
+            stay_population -= stay_history[-(stay_hours+1)]
 
-            # 3. 혼잡도 매핑
-            congestion = get_congestion_label(stay_population, area_m2)
-            day_result[str(hour)] = congestion
+        stay_population = max(stay_population, 0)
 
-        result.append(day_result)
+        # 혼잡도 매핑
+        congestion = get_congestion_label(stay_population, area_m2)
 
-    # 저장
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(result, f, ensure_ascii=False, indent=2)
+        insert_data.append((
+            park_name,
+            row['forecast_date'],
+            int(row['forecast_hour']),
+            congestion,
+            now_kst,
+            now_kst
+        ))
 
-    print(f"[{park_name}] 혼잡도 계산 완료 및 저장: {output_path}")
+    # park_congestion에 저장
+    insert_query = """
+        INSERT INTO park_congestion (park_name, congestion_date, congestion_hour, congestion_level, created_at, updated_at)
+        VALUES (%s, %s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE 
+            congestion_level = VALUES(congestion_level),
+            updated_at = VALUES(updated_at)
+    """
 
+    if insert_data:
+        cursor.executemany(insert_query, insert_data)
+        conn.commit()
+        print(f"[{park_name}] {len(insert_data)}건 혼잡도 데이터 삽입/업데이트 완료 (KST)")
+
+    cursor.close()
+    conn.close()
+
+# 메인 실행
 def main():
-    input_dir = 'output'  # 예측 결과 JSON 저장된 폴더
-    output_dir = 'output_congestion' 
-
     park_list = [
         "은평평화공원", "북서울꿈의숲", "서울숲공원",
         "암사생태공원", "송파나루공원", "서대문독립공원"
     ]
 
     today = datetime.today().date()
-    today_str = today.strftime('%Y-%m-%d') 
-    start_date = today + timedelta(days=1)
-    start_date_str = start_date.strftime('%Y-%m-%d') 
+    start_date = (today + timedelta(days=1)).strftime('%Y-%m-%d')
+    end_date = (today + timedelta(days=7)).strftime('%Y-%m-%d')
 
     for park in park_list:
-        safe_park_name = park.replace(' ', '_')
-        input_path = os.path.join(input_dir, f"{safe_park_name}_{today_str}_forecast.json")
-        output_path = os.path.join(output_dir, f"{safe_park_name}_{today_str}_congestion.json")
-
-        if not os.path.exists(input_path):
-            print(f"[{park}] 예측 JSON 없음, 스킵")
-            continue
-
-        process_park_forecast(park, input_path, output_path)
+        process_park_forecast(park, start_date, end_date)
 
 if __name__ == '__main__':
     main()
