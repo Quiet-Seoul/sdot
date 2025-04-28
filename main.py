@@ -2,9 +2,9 @@ import subprocess
 import sys
 import os
 
-def run_update_park(python_path):
-    print("\n=== 1. 어제 데이터 수집 및 park 테이블 저장 (update_park.py) ===")
-    subprocess.run([python_path, "update_park.py"], check=True)
+def run_update_all_data(python_path):
+    print("\n=== 1. 어제 데이터 수집 및 park, main_street 테이블 저장 (update_all_data.py) ===")
+    subprocess.run([python_path, "update_all_data.py"], check=True)
 
 def run_model_train(python_path):
     print("\n=== 2. Prophet 모델 학습 및 저장 (model.py) ===")
@@ -23,7 +23,7 @@ def main():
     python_path = sys.executable
     print(f"🛠️  현재 사용하는 Python 경로: {python_path}")
 
-    run_update_park(python_path)
+    run_update_all_data(python_path)
     run_model_train(python_path)
     run_predictor(python_path)
     run_calculate_congestion(python_path)
