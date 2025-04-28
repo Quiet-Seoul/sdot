@@ -108,7 +108,7 @@ def save_to_db(df: pd.DataFrame):
     cursor = conn.cursor()
 
     insert_query = """
-        INSERT INTO park_test (measuring_time, dong, visitor_count, district, park_name)
+        INSERT INTO park (measuring_time, dong, visitor_count, district, park_name)
         VALUES (%s, %s, %s, %s, %s)
     """
 
