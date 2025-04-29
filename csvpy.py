@@ -17,7 +17,7 @@ def get_connection():
     )
 
 # CSV 파일 경로
-csv_file_path = 'dataset/2025Q2_공원데이터.csv'
+csv_file_path = 'dataset/park/2025Q2_공원데이터_clean.csv'
 
 # 1. CSV 읽기
 df = pd.read_csv(csv_file_path)
@@ -32,7 +32,7 @@ cursor = conn.cursor()
 
 # insert 쿼리
 insert_query = """
-    INSERT INTO park (measuring_time, dong, visitor_count, district, park_name)
+    INSERT INTO park_data (measuring_time, dong, visitor_count, district, park_name)
     VALUES (%s, %s, %s, %s, %s)
 """
 

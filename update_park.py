@@ -21,7 +21,7 @@ def get_connection():
     )
 
 # API 수집
-def fetch_today_park_data(api_key: str, target_date: str) -> pd.DataFrame:
+def fetch_today_all_data(api_key: str, target_date: str) -> pd.DataFrame:
     all_data = []
 
     for page in range(1, 1000):
@@ -40,28 +40,39 @@ def fetch_today_park_data(api_key: str, target_date: str) -> pd.DataFrame:
                     break
                 continue
 
-            region = row.find("REGION").text
-            district = row.find("AUTONOMOUS_DISTRICT").text
+            record = {
+                "MODEL_NM": row.findtext("MODEL_NM", default=None),
+                "SERIAL_NO": row.findtext("SERIAL_NO", default=None),
+                "SENSING_TIME": sensing_time_str,
+                "REGION": row.find("REGION").text,
+                "AUTONOMOUS_DISTRICT": row.find("AUTONOMOUS_DISTRICT").text,
+                "ADMINISTRATIVE_DISTRICT": row.find("ADMINISTRATIVE_DISTRICT").text,
+                "VISITOR_COUNT": int(row.find("VISITOR_COUNT").text),
+                "REG_DTTM": row.find("REG_DTTM").text
+            }
+            all_data.append(record)
 
-            if (region == "parks" and district != "Seoul_Grand_Park") or \
-               (region == "public_facilities" and district == "Seodaemun-gu"):
-                all_data.append({
-                    "SENSING_TIME": sensing_time_str,
-                    "DISTRICT": district,
-                    "NEIGHBORHOOD": row.find("ADMINISTRATIVE_DISTRICT").text,
-                    "VISITOR_COUNT": int(row.find("VISITOR_COUNT").text),
-                    "REG_DTTM": row.find("REG_DTTM").text
-                })
-
-        # 더 이상 target_date보다 작은 데이터면 중단
         if rows[-1].find("SENSING_TIME").text < target_date:
             break
 
-    df_api = pd.DataFrame(all_data)
-    return df_api
+    df_all = pd.DataFrame(all_data)
+    return df_all
 
-# 전처리
-def preprocess_api_data(df_api: pd.DataFrame) -> pd.DataFrame:
+# 데이터 필터링
+def filter_parks_data(df_all: pd.DataFrame) -> pd.DataFrame:
+    return df_all[
+        ((df_all['REGION'] == "parks") & (df_all['AUTONOMOUS_DISTRICT'] != "Seoul_Grand_Park")) |
+        ((df_all['REGION'] == "public_facilities") & (df_all['AUTONOMOUS_DISTRICT'] == "Seodaemun-gu"))
+    ]
+
+def filter_mainstreet_data(df_all: pd.DataFrame) -> pd.DataFrame:
+    return df_all[
+        (df_all['REGION'] == "main_street")
+    ]
+
+
+# 공원 데이터 전처리
+def preprocess_park_data(df_park: pd.DataFrame) -> pd.DataFrame:
     district_map = {
         "Jongno-gu": "종로구", "Jung-gu": "중구", "Yongsan-gu": "용산구", "Seongdong-gu": "성동구",
         "Gwangjin-gu": "광진구", "Dongdaemun-gu": "동대문구", "Jungnang-gu": "중랑구", "Seongbuk-gu": "성북구",
@@ -84,31 +95,70 @@ def preprocess_api_data(df_api: pd.DataFrame) -> pd.DataFrame:
         ('강동구', 'Amsa3-dong'): '암사생태공원'
         }  
     
-    df_api.rename(columns={
+    df_park.rename(columns={
         'SENSING_TIME': '측정시간',
-        'DISTRICT': '자치구',
-        'NEIGHBORHOOD': '행정동',
+        'AUTONOMOUS_DISTRICT': '자치구',
+        'ADMINISTRATIVE_DISTRICT': '행정동',
         'VISITOR_COUNT': '방문자수',
         'REG_DTTM': '등록일'
     }, inplace=True)
 
-    df_api.drop(columns='등록일', inplace=True)
-    df_api['측정시간'] = df_api['측정시간'].str.replace('_', ' ', regex=False)
-    df_api['구'] = df_api['자치구'].map(district_map)
-    df_api['datetime'] = pd.to_datetime(df_api['측정시간'])
-    df_api['공원명'] = df_api.apply(lambda x: park_name_map.get((x['구'], x['행정동']), '기타공원'), axis=1)
+    df_park.drop(columns='등록일', inplace=True)
+    df_park['측정시간'] = df_park['측정시간'].str.replace('_', ' ', regex=False)
+    df_park['구'] = df_park['자치구'].map(district_map)
+    df_park['datetime'] = pd.to_datetime(df_park['측정시간'])
+    df_park['공원명'] = df_park.apply(lambda x: park_name_map.get((x['구'], x['행정동']), '기타공원'), axis=1)
 
-    df_api = df_api[['측정시간', '행정동', '방문자수', '구', '공원명']]
-    df_api = df_api.sort_values('측정시간').reset_index(drop=True)
-    return df_api
+    df_park = df_park[['측정시간', '행정동', '방문자수', '구', '공원명']]
+    df_park = df_park.sort_values('측정시간').reset_index(drop=True)
+    return df_park
 
-# DB 저장
-def save_to_db(df: pd.DataFrame):
+# 메인거리 데이터 전처리
+def preprocess_mainstreet_data(df_main: pd.DataFrame) -> pd.DataFrame:
+    district_map = {
+        "Jongno-gu": "종로구", "Jung-gu": "중구", "Yongsan-gu": "용산구", "Seongdong-gu": "성동구",
+        "Gwangjin-gu": "광진구", "Dongdaemun-gu": "동대문구", "Jungnang-gu": "중랑구", "Seongbuk-gu": "성북구",
+        "Gangbuk-gu": "강북구", "Dobong-gu": "도봉구", "Nowon-gu": "노원구", "Eunpyeong-gu": "은평구",
+        "Seodaemun-gu": "서대문구", "Mapo-gu": "마포구", "Yangcheon-gu": "양천구", "Gangseo-gu": "강서구",
+        "Guro-gu": "구로구", "Geumcheon-gu": "금천구", "Yeongdeungpo-gu": "영등포구", "Dongjak-gu": "동작구",
+        "Gwanak-gu": "관악구", "Seocho-gu": "서초구", "Gangnam-gu": "강남구", "Songpa-gu": "송파구", "Gangdong-gu": "강동구"
+        }
+
+    df_main.rename(columns={
+        'MODEL_NM': '모델명',
+        'SERIAL_NO': '시리얼번호',
+        'SENSING_TIME': '측정시간',
+        'REGION': '지역',
+        'AUTONOMOUS_DISTRICT': '자치구',
+        'ADMINISTRATIVE_DISTRICT': '행정동',
+        'VISITOR_COUNT': '방문자수',
+        'REG_DTTM': '등록일'
+    }, inplace=True)
+
+    df_main.drop(columns='등록일', inplace=True)
+    df_main['시리얼번호'] = df_main['시리얼번호'].astype(int).astype(str)
+    df_main['측정시간'] = df_main['측정시간'].str.replace('_', ' ', regex=False)
+    df_main['구'] = df_main['자치구'].map(district_map)
+    df_main['datetime'] = pd.to_datetime(df_main['측정시간'])
+
+    main_street_map = {
+        '4035': '샤로수길',
+        '4032': '망원동 거리',
+        '4020': '해방촌'
+    }
+    df_main['메인거리명'] = df_main['시리얼번호'].map(main_street_map).fillna('기타거리')
+
+    df_main = df_main[['시리얼번호', '측정시간', '지역', '행정동', '방문자수', '구']]
+    df_main = df_main.sort_values('측정시간').reset_index(drop=True)
+    return df_main
+
+# park DB 저장
+def save_to_park_db(df: pd.DataFrame):
     conn = get_connection()
     cursor = conn.cursor()
 
     insert_query = """
-        INSERT INTO park (measuring_time, dong, visitor_count, district, park_name)
+        INSERT INTO park_test (measuring_time, dong, visitor_count, district, park_name)
         VALUES (%s, %s, %s, %s, %s)
     """
 
@@ -119,16 +169,45 @@ def save_to_db(df: pd.DataFrame):
 
     cursor.executemany(insert_query, data)
     conn.commit()
-
     cursor.close()
     conn.close()
 
-    print(f"{len(data)}건 삽입 완료")
+    print(f"✅ park 테이블에 {len(data)}건 삽입 완료!")
+
+
+# main street DB 저장
+def save_to_mainstreet_db(df: pd.DataFrame):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    insert_query = """
+        INSERT INTO main_street (serial_no, measuring_time, region, dong, visitor_count, district)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """
+
+    data = [
+        (row['시리얼번호'], pd.to_datetime(row['측정시간']), row['지역'], row['행정동'], row['방문자수'], row['구'])
+        for idx, row in df.iterrows()
+    ]
+
+    cursor.executemany(insert_query, data)
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    print(f"✅ main_street 테이블에 {len(data)}건 삽입 완료!")
+
 
 # 실행
 if __name__ == '__main__':
     today = (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d")
-    df_api = fetch_today_park_data(api_key, today)
-    df_api = preprocess_api_data(df_api)
 
-    save_to_db(df_api)
+    df_all = fetch_today_all_data(api_key, today)
+
+    df_park_raw = filter_parks_data(df_all)
+    df_park = preprocess_park_data(df_park_raw)
+    save_to_park_db(df_park)
+
+    df_main_raw = filter_mainstreet_data(df_all)
+    df_main = preprocess_mainstreet_data(df_main_raw)
+    save_to_mainstreet_db(df_main)
