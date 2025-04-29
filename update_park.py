@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import pymysql
 import os
+import pytz
 
 # .env 파일 로드
 load_dotenv()
@@ -158,13 +159,14 @@ def save_to_park_db(df: pd.DataFrame):
     cursor = conn.cursor()
 
     insert_query = """
-        INSERT IGNORE INTO park_test (measuring_time, dong, visitor_count, district, park_name)
-        VALUES (%s, %s, %s, %s, %s)
+        INSERT IGNORE INTO park_data (measuring_time, dong, visitor_count, district, park_name, created_at)
+        VALUES (%s, %s, %s, %s, %s, %s)
     """
-    # 실제 돌릴 때는 park_test -> park_data로 변경해야 함
+
+    kst_now = datetime.now(pytz.timezone('Asia/Seoul'))
 
     data = [
-        (pd.to_datetime(row['측정시간']), row['행정동'], row['방문자수'], row['구'], row['공원명'])
+        (pd.to_datetime(row['측정시간']), row['행정동'], row['방문자수'], row['구'], row['공원명'], kst_now)
         for idx, row in df.iterrows()
     ]
 
@@ -173,7 +175,7 @@ def save_to_park_db(df: pd.DataFrame):
     cursor.close()
     conn.close()
 
-    print(f"✅ park 테이블에 {len(data)}건 삽입 완료!")
+    print(f"✅ park_data 테이블에 {len(data)}건 삽입 완료!")
 
 
 
@@ -183,12 +185,14 @@ def save_to_mainstreet_db(df: pd.DataFrame):
     cursor = conn.cursor()
 
     insert_query = """
-        INSERT IGNORE INTO main_street (serial_no, measuring_time, region, dong, visitor_count, district)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        INSERT IGNORE INTO main_street (serial_no, measuring_time, region, dong, visitor_count, district, created_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
 
+    kst_now = datetime.now(pytz.timezone('Asia/Seoul'))
+
     data = [
-        (row['시리얼번호'], pd.to_datetime(row['측정시간']), row['지역'], row['행정동'], row['방문자수'], row['구'])
+        (row['시리얼번호'], pd.to_datetime(row['측정시간']), row['지역'], row['행정동'], row['방문자수'], row['구'], kst_now)
         for idx, row in df.iterrows()
     ]
 
