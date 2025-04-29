@@ -158,9 +158,10 @@ def save_to_park_db(df: pd.DataFrame):
     cursor = conn.cursor()
 
     insert_query = """
-        INSERT INTO park_test (measuring_time, dong, visitor_count, district, park_name)
+        INSERT IGNORE INTO park_test (measuring_time, dong, visitor_count, district, park_name)
         VALUES (%s, %s, %s, %s, %s)
     """
+    # 실제 돌릴 때는 park_test -> park_data로 변경해야 함
 
     data = [
         (pd.to_datetime(row['측정시간']), row['행정동'], row['방문자수'], row['구'], row['공원명'])
@@ -175,13 +176,14 @@ def save_to_park_db(df: pd.DataFrame):
     print(f"✅ park 테이블에 {len(data)}건 삽입 완료!")
 
 
+
 # main street DB 저장
 def save_to_mainstreet_db(df: pd.DataFrame):
     conn = get_connection()
     cursor = conn.cursor()
 
     insert_query = """
-        INSERT INTO main_street (serial_no, measuring_time, region, dong, visitor_count, district)
+        INSERT IGNORE INTO main_street (serial_no, measuring_time, region, dong, visitor_count, district)
         VALUES (%s, %s, %s, %s, %s, %s)
     """
 
