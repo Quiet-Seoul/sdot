@@ -55,7 +55,7 @@ place_settings = {
     "북서울꿈의숲": {"type": "park", "area_m2": 660000, "stay_hours": 3, "scaling_factor": 50},
     "서울숲공원": {"type": "park", "area_m2": 480994, "stay_hours": 3, "scaling_factor": 100},
     "암사생태공원": {"type": "park", "area_m2": 270279, "stay_hours": 3, "scaling_factor": 50},
-    "송파나루공원": {"type": "park", "area_m2": 285757, "stay_hours": 2, "scaling_factor": 50},
+    # "송파나루공원": {"type": "park", "area_m2": 285757, "stay_hours": 2, "scaling_factor": 50},
     "서대문독립공원": {"type": "park", "area_m2": 44600, "stay_hours": 2, "scaling_factor": 20},
     # 거리
     "이태원회나무길": {"type": "mainstreet", "area_m2": 12168.4, "stay_hours": 3, "scaling_factor": 50},

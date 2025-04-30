@@ -89,8 +89,8 @@ def preprocess_park_data(df_park: pd.DataFrame) -> pd.DataFrame:
         ('서대문구', 'Cheonyeon-dong'): '서대문독립공원',
         ('강북구', 'Beon3-dong'): '북서울꿈의숲',
         ('강북구', 'Beon3(sam)-dong'): '북서울꿈의숲',
-        ('송파구', 'Jamsil6(yuk)-dong'): '송파나루공원',
-        ('송파구', 'Jamsil6-dong'): '송파나루공원',
+        # ('송파구', 'Jamsil6(yuk)-dong'): '송파나루공원',
+        # ('송파구', 'Jamsil6-dong'): '송파나루공원',
         ('은평구', 'Nokbeon-dong'): '은평평화공원',
         ('강동구', 'Amsa3(sam)-dong'): '암사생태공원',
         ('강동구', 'Amsa3-dong'): '암사생태공원'
