@@ -65,7 +65,7 @@ def save_forecast_to_db(name: str, place_type: str, forecast_df: pd.DataFrame, s
 # 실행
 def main():
     model_dir = 'models'
-    park_list = ['송파나루공원', '암사생태공원', '서울숲공원', '서대문독립공원', '북서울꿈의숲', '은평평화공원']
+    park_list = ['암사생태공원', '서울숲공원', '서대문독립공원', '북서울꿈의숲', '은평평화공원']
 
     main_street_map = {
         '4035': '샤로수길',
