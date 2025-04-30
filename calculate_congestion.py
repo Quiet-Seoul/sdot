@@ -35,18 +35,16 @@ def get_park_congestion_label(visitors, area_m2):
 # 거리 혼잡도 기준
 def get_street_congestion_label(visitors, area_m2):
     if visitors == 0:
-        return "매우 한적함"
+        return "여유"
     per_capita_area = area_m2 / visitors
     if per_capita_area >= 9.29:
-        return "매우 한적함"
+        return "여유"
     elif per_capita_area >= 4.61:
-        return "한적함"
-    elif per_capita_area >= 2.81:
         return "보통"
-    elif per_capita_area >= 1.73:
-        return "약간 붐빔"
+    elif per_capita_area >= 2.81:
+        return "약간 혼잡"
     else:
-        return "붐빔"
+        return "혼잡"
 
 # 장소별 설정 (공원 + 거리)
 place_settings = {
