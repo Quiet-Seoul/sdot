@@ -17,11 +17,7 @@ def get_connection():
     )
 
 # CSV 파일 경로
-<<<<<<< HEAD:csvpy.py
 csv_file_path = 'dataset/park/2025Q2_공원데이터_clean.csv'
-=======
-csv_file_path = 'dataset/park/2025Q2_공원데이터.csv'
->>>>>>> origin/feature/sy:upload_park_csv.py
 
 # 1. CSV 읽기
 df = pd.read_csv(csv_file_path)
