@@ -77,7 +77,7 @@ def main():
     holidays, holiday_dates = load_holidays(holiday_data_path)
 
     # 공원 처리
-    park_list = ['송파나루공원', '암사생태공원', '서울숲공원', '서대문독립공원', '북서울꿈의숲', '은평평화공원']
+    park_list = ['암사생태공원', '서울숲공원', '서대문독립공원', '북서울꿈의숲', '은평평화공원']
     df_park = load_data_from_db('park_data', 'park_name')
 
     os.makedirs('models', exist_ok=True)
