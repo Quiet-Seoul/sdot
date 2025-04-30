@@ -1,33 +1,17 @@
-import subprocess
-import sys
+# main.py - 전체 파이프라인 실행 스크립트
+
 import os
 
-def run_update_park(python_path):
-    print("\n=== 1. 어제 데이터 수집 및 park 테이블 저장 (update_park.py) ===")
-    subprocess.run([python_path, "update_park.py"], check=True)
+print("\n[1/4] 🔄 실시간 데이터 수집 및 DB 저장 중...")
+os.system("python update_db.py")
 
-def run_model_train(python_path):
-    print("\n=== 2. Prophet 모델 학습 및 저장 (model.py) ===")
-    subprocess.run([python_path, "model.py"], check=True)
+print("\n[2/4] 🤖 Prophet 모델 학습 중...")
+os.system("python model.py")
 
-def run_predictor(python_path):
-    print("\n=== 3. 예측 결과 park_forecast 테이블 저장 (predictor.py) ===")
-    subprocess.run([python_path, "predictor.py"], check=True)
+print("\n[3/4] 📈 예측값 생성 및 저장 중...")
+os.system("python predictor.py")
 
-def run_calculate_congestion(python_path):
-    print("\n=== 4. 혼잡도 계산 및 park_congestion 테이블 저장 (calculate_congestion.py) ===")
-    subprocess.run([python_path, "calculate_congestion.py"], check=True)
+print("\n[4/4] 📊 혼잡도 계산 및 저장 중...")
+os.system("python calculate_congestion.py")
 
-def main():
-    # 현재 실행 중인 Python 경로 사용
-    python_path = sys.executable
-    print(f"🛠️  현재 사용하는 Python 경로: {python_path}")
-
-    run_update_park(python_path)
-    run_model_train(python_path)
-    run_predictor(python_path)
-    run_calculate_congestion(python_path)
-    print("\n✅ 모든 과정 완료!")
-
-if __name__ == '__main__':
-    main()
+print("\n✅ 모든 작업 완료!")
