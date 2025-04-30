@@ -114,6 +114,7 @@ def preprocess_park_data(df_park: pd.DataFrame) -> pd.DataFrame:
     df_park = df_park.sort_values('측정시간').reset_index(drop=True)
     return df_park
 
+
 # 메인거리 데이터 전처리
 def preprocess_mainstreet_data(df_main: pd.DataFrame) -> pd.DataFrame:
     district_map = {
@@ -137,19 +138,14 @@ def preprocess_mainstreet_data(df_main: pd.DataFrame) -> pd.DataFrame:
     }, inplace=True)
 
     df_main.drop(columns='등록일', inplace=True)
+    
+    df_main = df_main[df_main['시리얼번호'].notna()]
     df_main['시리얼번호'] = df_main['시리얼번호'].astype(int).astype(str)
+
     df_main['측정시간'] = df_main['측정시간'].str.replace('_', ' ', regex=False)
     df_main['구'] = df_main['자치구'].map(district_map)
-    df_main['datetime'] = pd.to_datetime(df_main['측정시간'])
 
-    main_street_map = {
-        '4035': '샤로수길',
-        '4032': '망원동 거리',
-        '4020': '해방촌'
-    }
-    df_main['메인거리명'] = df_main['시리얼번호'].map(main_street_map).fillna('기타거리')
-
-    df_main = df_main[['시리얼번호', '측정시간', '지역', '행정동', '방문자수', '구']]
+    df_main = df_main[['시리얼번호', '측정시간', '행정동', '방문자수', '구']]
     df_main = df_main.sort_values('측정시간').reset_index(drop=True)
     return df_main
 
@@ -185,14 +181,22 @@ def save_to_mainstreet_db(df: pd.DataFrame):
     cursor = conn.cursor()
 
     insert_query = """
-        INSERT IGNORE INTO main_street (serial_no, measuring_time, region, dong, visitor_count, district, created_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT IGNORE INTO main_street 
+        (serial_no, measuring_time, dong, visitor_count, district, created_at)
+        VALUES (%s, %s, %s, %s, %s, %s)
     """
 
     kst_now = datetime.now(pytz.timezone('Asia/Seoul'))
 
     data = [
-        (row['시리얼번호'], pd.to_datetime(row['측정시간']), row['지역'], row['행정동'], row['방문자수'], row['구'], kst_now)
+        (
+            row['시리얼번호'],
+            pd.to_datetime(row['측정시간']),
+            row['행정동'],
+            row['방문자수'],
+            row['구'],
+            kst_now
+        )
         for idx, row in df.iterrows()
     ]
 
