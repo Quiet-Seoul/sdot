@@ -32,7 +32,7 @@ cursor = conn.cursor()
 
 # insert 쿼리
 insert_query = """
-    INSERT INTO park_data (measuring_time, dong, visitor_count, district, park_name)
+    INSERT INTO park (measuring_time, dong, visitor_count, district, park_name)
     VALUES (%s, %s, %s, %s, %s)
 """
 

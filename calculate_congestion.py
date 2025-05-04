@@ -111,21 +111,32 @@ def process_place_congestion(name, start_date, end_date):
         else:
             label = get_street_congestion_label(stay_population, area_m2)
 
+        per_capita_area = area_m2 / stay_population if stay_population > 0 else area_m2
+
         insert_data.append((
             name, place_type,
             row['forecast_date'],
             int(row['forecast_hour']),
-            label, now_kst, now_kst
+            label,
+            per_capita_area,
+            stay_population,
+            now_kst, now_kst
         ))
+
+
 
     insert_query = """
         INSERT INTO congestion
-        (name, type, congestion_date, congestion_hour, congestion_level, created_at, updated_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        (name, type, congestion_date, congestion_hour, congestion_level, per_capita_area, stay_population, created_at, updated_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE
             congestion_level = VALUES(congestion_level),
+            per_capita_area = VALUES(per_capita_area),
+            stay_population = VALUES(stay_population),
             updated_at = VALUES(updated_at)
     """
+
+
 
     if insert_data:
         cursor.executemany(insert_query, insert_data)

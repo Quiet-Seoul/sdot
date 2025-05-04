@@ -155,7 +155,7 @@ def save_to_park_db(df: pd.DataFrame):
     cursor = conn.cursor()
 
     insert_query = """
-        INSERT IGNORE INTO park_data (measuring_time, dong, visitor_count, district, park_name, created_at)
+        INSERT IGNORE INTO park (measuring_time, dong, visitor_count, district, park_name, created_at)
         VALUES (%s, %s, %s, %s, %s, %s)
     """
 
@@ -171,7 +171,7 @@ def save_to_park_db(df: pd.DataFrame):
     cursor.close()
     conn.close()
 
-    print(f"✅ park_data 테이블에 {len(data)}건 삽입 완료!")
+    print(f"✅ park 테이블에 {len(data)}건 삽입 완료!")
 
 
 
@@ -210,7 +210,7 @@ def save_to_mainstreet_db(df: pd.DataFrame):
 
 # 실행
 if __name__ == '__main__':
-    today = (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d")
+    today = (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d")
 
     df_all = fetch_today_all_data(api_key, today)
 
