@@ -210,7 +210,7 @@ def save_to_mainstreet_db(df: pd.DataFrame):
 
 # 실행
 if __name__ == '__main__':
-    today = (datetime.today() - timedelta(days=2)).strftime("%Y-%m-%d")
+    today = (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d")
 
     df_all = fetch_today_all_data(api_key, today)
 
