@@ -83,7 +83,7 @@ def main():
             print(f"[{park}] 모델 없음")
             continue
         model = load_model(model_path)
-        future = model.make_future_dataframe(periods=45*24, freq='h')
+        future = model.make_future_dataframe(periods=9*24, freq='h')
         forecast = model.predict(future)
         forecast['yhat'] = forecast['yhat'].clip(lower=0)
         save_forecast_to_db(park, 'park', forecast, start_date, end_date)
@@ -95,7 +95,7 @@ def main():
             print(f"[{serial_no}] 모델 없음")
             continue
         model = load_model(model_path)
-        future = model.make_future_dataframe(periods=45*24, freq='H')
+        future = model.make_future_dataframe(periods=9*24, freq='H')
         forecast = model.predict(future)
         forecast['yhat'] = forecast['yhat'].clip(lower=0)
         save_forecast_to_db(street_name, 'mainstreet', forecast, start_date, end_date)

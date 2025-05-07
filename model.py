@@ -88,8 +88,16 @@ def main():
             print(f"[{park}] 데이터 없음, 스킵")
             continue
 
+        ## 추가
+        # 최근 180일만 사용
+        cutoff_date = pd.Timestamp.today() - pd.Timedelta(days=180)
+        df_one = df_one[df_one['ds'] >= cutoff_date]
+
         df_prophet = df_one[['ds', 'y']].copy()
+
         df_prophet['y'] = df_prophet.apply(apply_holiday_weekend_weight, axis=1, holiday_dates=holiday_dates)
+
+
 
         model = build_prophet_model(holidays)
         model.fit(df_prophet)
@@ -113,6 +121,10 @@ def main():
         if df_one.empty:
             print(f"[{serial}] 거리 데이터 없음, 스킵")
             continue
+                ## 추가
+        # 최근 180일만 사용
+        cutoff_date = pd.Timestamp.today() - pd.Timedelta(days=180)
+        df_one = df_one[df_one['ds'] >= cutoff_date]
 
         df_prophet = df_one[['ds', 'y']].copy()
         df_prophet['y'] = df_prophet.apply(apply_holiday_weekend_weight, axis=1, holiday_dates=holiday_dates)
