@@ -1,5 +1,7 @@
 import os
 
+PYTHON = "/home/ubuntu/sdot/venv/bin/python"
+
 print("\n[1/4] 🔄 실시간 데이터 수집 및 DB 저장 중...")
 os.system("python update_db.py")
 
